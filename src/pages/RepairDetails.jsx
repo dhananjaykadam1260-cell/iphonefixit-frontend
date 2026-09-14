@@ -1,4 +1,9 @@
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
 import { useParams } from "react-router-dom";
 
 import {
@@ -21,99 +26,196 @@ function RepairDetails() {
   const [cost, setCost] = useState("");
 
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
+  // Backend base URL for uploaded images
   const backendUrl =
     import.meta.env.VITE_BACKEND_URL ||
     "http://localhost:8080";
 
-  useEffect(() => {
-    loadRepair();
-  }, [id]);
+  // API base URL for PDF download
+  const apiUrl =
+    import.meta.env.VITE_API_URL ||
+    "http://localhost:8080/api";
 
-  const loadRepair = async () => {
+  const loadRepair = useCallback(async () => {
     try {
+      setLoading(true);
+      setError("");
+
       const response =
         await api.get(`/repairs/${id}`);
 
       setRepair(response.data);
 
-      setStatus(response.data.status);
+      setStatus(
+        response.data.status ||
+        "RECEIVED"
+      );
 
       setCost(
-        response.data.finalRepairCost ?? ""
+        response.data.finalRepairCost ??
+        ""
       );
 
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Load repair error:",
+        error
+      );
+
+      setError(
+        error.response?.data?.error ||
+        "Unable to load repair details."
+      );
+
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    loadRepair();
+  }, [loadRepair]);
 
   const saveStatus = async () => {
     try {
+      setMessage("");
+      setError("");
+
       await api.put(
         `/repairs/${id}/status`,
         null,
         {
-          params: { status },
+          params: {
+            status,
+          },
         }
       );
 
-      setMessage("Repair status updated.");
+      setMessage(
+        "Repair status updated successfully."
+      );
 
-      loadRepair();
+      await loadRepair();
 
-    } catch {
-      setMessage("Unable to update status.");
+    } catch (error) {
+      console.error(
+        "Status update error:",
+        error
+      );
+
+      setError(
+        error.response?.data?.error ||
+        "Unable to update status."
+      );
     }
   };
 
   const saveCost = async () => {
-    if (!cost) {
-      setMessage("Please enter final repair cost.");
+    if (
+      cost === "" ||
+      Number(cost) < 0
+    ) {
+      setError(
+        "Please enter a valid repair cost."
+      );
+
       return;
     }
 
     try {
+      setMessage("");
+      setError("");
+
       await api.put(
         `/repairs/${id}/cost`,
         null,
         {
-          params: { cost },
+          params: {
+            cost: Number(cost),
+          },
         }
       );
 
-      setMessage("Final repair cost saved.");
+      setMessage(
+        "Final repair cost saved successfully."
+      );
 
-      loadRepair();
+      await loadRepair();
 
-    } catch {
-      setMessage("Unable to save cost.");
+    } catch (error) {
+      console.error(
+        "Cost update error:",
+        error
+      );
+
+      setError(
+        error.response?.data?.error ||
+        "Unable to save repair cost."
+      );
     }
   };
 
   const downloadBill = () => {
+    if (
+      repair?.finalRepairCost == null
+    ) {
+      setError(
+        "Please add final repair cost before downloading the bill."
+      );
+
+      return;
+    }
+
     window.open(
-      `${import.meta.env.VITE_API_URL}/bills/${id}`,
-      "_blank"
+      `${apiUrl}/bills/${id}`,
+      "_blank",
+      "noopener,noreferrer"
     );
   };
 
   const shareWhatsApp = async () => {
     try {
+      setMessage("");
+      setError("");
+
       const response =
-        await api.get(`/whatsapp/share/${id}`);
+        await api.get(
+          `/whatsapp/share/${id}`
+        );
+
+      if (
+        !response.data?.whatsappUrl
+      ) {
+        setError(
+          "WhatsApp link was not generated."
+        );
+
+        return;
+      }
 
       window.open(
         response.data.whatsappUrl,
-        "_blank"
+        "_blank",
+        "noopener,noreferrer"
       );
 
-    } catch {
-      setMessage("Unable to open WhatsApp sharing.");
+    } catch (error) {
+      console.error(
+        "WhatsApp error:",
+        error
+      );
+
+      setError(
+        error.response?.data?.error ||
+        "Unable to open WhatsApp sharing."
+      );
     }
   };
 
-  if (!repair) {
+  if (loading) {
     return (
       <AdminLayout>
 
@@ -125,8 +227,34 @@ function RepairDetails() {
     );
   }
 
+  if (error && !repair) {
+    return (
+      <AdminLayout>
+
+        <div className="screen-message">
+          {error}
+        </div>
+
+      </AdminLayout>
+    );
+  }
+
+  if (!repair) {
+    return (
+      <AdminLayout>
+
+        <div className="screen-message">
+          Repair not found.
+        </div>
+
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
+
+      {/* PAGE HEADING */}
 
       <div className="page-heading">
 
@@ -136,17 +264,30 @@ function RepairDetails() {
             REPAIR #{repair.id}
           </span>
 
-          <h1>{repair.deviceModel}</h1>
+          <h1>
+            {repair.deviceModel}
+          </h1>
 
           <p>
-            {repair.customer?.name} · {repair.customer?.phoneNumber}
+            {repair.customer?.name ||
+              "Unknown Customer"}
+            {" · "}
+            {repair.customer?.phoneNumber ||
+              "-"}
           </p>
 
         </div>
 
-        <Status status={repair.status} />
+        <Status
+          status={
+            repair.status ||
+            "RECEIVED"
+          }
+        />
 
       </div>
+
+      {/* SUCCESS MESSAGE */}
 
       {message && (
         <div className="success-message">
@@ -154,33 +295,68 @@ function RepairDetails() {
         </div>
       )}
 
+      {/* ERROR MESSAGE */}
+
+      {error && (
+        <div className="error-message">
+          {error}
+        </div>
+      )}
+
       <div className="repair-details-layout">
+
+        {/* LEFT SIDE */}
 
         <section className="ui-card">
 
           <div className="card-heading">
 
             <div>
-              <h2>Device Information</h2>
-              <p>Phone received for repair</p>
+
+              <h2>
+                Device Information
+              </h2>
+
+              <p>
+                Phone received for repair
+              </p>
+
             </div>
 
             <Smartphone size={20} />
 
           </div>
 
-          {repair.phoneImageUrl && (
+          {/* PHONE IMAGE */}
+
+          {repair.phoneImageUrl ? (
 
             <div className="repair-photo">
 
               <img
                 src={`${backendUrl}${repair.phoneImageUrl}`}
-                alt="Phone"
+                alt={`${repair.deviceModel} repair`}
+                onError={(e) => {
+                  e.currentTarget.style.display =
+                    "none";
+                }}
               />
 
             </div>
 
+          ) : (
+
+            <div className="repair-photo">
+
+              <div className="screen-message">
+                No phone photo available
+              </div>
+
+            </div>
+
           )}
+
+          {/* DEVICE DETAILS */}
 
           <div className="details-info-grid">
 
@@ -191,32 +367,52 @@ function RepairDetails() {
 
             <Info
               title="Serial / IMEI"
-              value={repair.serialNumber || "-"}
+              value={
+                repair.serialNumber ||
+                "-"
+              }
             />
 
             <Info
               title="Received Date"
-              value={repair.receivedDate}
+              value={
+                repair.receivedDate ||
+                "-"
+              }
             />
 
             <Info
               title="Delivery Date"
-              value={repair.deliveryDate || "Pending"}
+              value={
+                repair.deliveryDate ||
+                "Pending"
+              }
             />
 
           </div>
 
+          {/* PROBLEM */}
+
           <div className="problem-box">
 
-            <span>REPORTED PROBLEM</span>
+            <span>
+              REPORTED PROBLEM
+            </span>
 
-            <p>{repair.problem}</p>
+            <p>
+              {repair.problem ||
+                "No problem description provided."}
+            </p>
 
           </div>
 
         </section>
 
+        {/* RIGHT SIDE */}
+
         <div>
+
+          {/* CUSTOMER */}
 
           <section className="ui-card control-box">
 
@@ -232,25 +428,36 @@ function RepairDetails() {
 
             <Info
               title="Name"
-              value={repair.customer?.name}
+              value={
+                repair.customer?.name
+              }
             />
 
             <Info
               title="Phone"
-              value={repair.customer?.phoneNumber}
+              value={
+                repair.customer
+                  ?.phoneNumber
+              }
             />
 
           </section>
 
+          {/* STATUS */}
+
           <section className="ui-card control-box">
 
-            <h2>Repair Status</h2>
+            <h2>
+              Repair Status
+            </h2>
 
             <select
               className="app-select"
               value={status}
               onChange={(e) =>
-                setStatus(e.target.value)
+                setStatus(
+                  e.target.value
+                )
               }
             >
 
@@ -277,18 +484,26 @@ function RepairDetails() {
             </select>
 
             <button
+              type="button"
               className="btn btn-primary full-button"
               onClick={saveStatus}
             >
+
               <Save size={16} />
+
               Update Status
+
             </button>
 
           </section>
 
+          {/* FINAL COST */}
+
           <section className="ui-card control-box">
 
-            <h2>Final Repair Cost</h2>
+            <h2>
+              Final Repair Cost
+            </h2>
 
             <div className="money-field">
 
@@ -297,9 +512,12 @@ function RepairDetails() {
               <input
                 type="number"
                 min="0"
+                step="0.01"
                 value={cost}
                 onChange={(e) =>
-                  setCost(e.target.value)
+                  setCost(
+                    e.target.value
+                  )
                 }
                 placeholder="0"
               />
@@ -307,34 +525,57 @@ function RepairDetails() {
             </div>
 
             <button
+              type="button"
               className="btn btn-secondary full-button"
               onClick={saveCost}
             >
+
               <Save size={16} />
+
               Save Cost
+
             </button>
 
           </section>
 
+          {/* BILL & WHATSAPP */}
+
           <section className="ui-card control-box">
 
-            <h2>Bill & Sharing</h2>
+            <h2>
+              Bill & Sharing
+            </h2>
 
             <button
+              type="button"
               className="btn btn-primary full-button"
-              disabled={repair.finalRepairCost == null}
+              disabled={
+                repair.finalRepairCost ==
+                null
+              }
               onClick={downloadBill}
             >
+
               <Download size={17} />
+
               Download PDF
+
             </button>
 
             <button
+              type="button"
               className="btn whatsapp-button full-button"
-              onClick={shareWhatsApp}
+              onClick={
+                shareWhatsApp
+              }
             >
-              <MessageCircle size={17} />
+
+              <MessageCircle
+                size={17}
+              />
+
               Share on WhatsApp
+
             </button>
 
           </section>
@@ -347,24 +588,36 @@ function RepairDetails() {
   );
 }
 
-function Info({ title, value }) {
+function Info({
+  title,
+  value,
+}) {
   return (
     <div className="info-item">
 
-      <span>{title}</span>
+      <span>
+        {title}
+      </span>
 
       <strong>
-        {value || "-"}
+        {value ?? "-"}
       </strong>
 
     </div>
   );
 }
 
-function Status({ status }) {
+function Status({
+  status,
+}) {
+  const safeStatus =
+    status || "RECEIVED";
+
   return (
-    <span className={`status large-status ${status?.toLowerCase()}`}>
-      {status}
+    <span
+      className={`status large-status ${safeStatus.toLowerCase()}`}
+    >
+      {safeStatus}
     </span>
   );
 }

@@ -1,220 +1,186 @@
-import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
-  LayoutDashboard,
-  Wrench,
-  Users,
-  Plus,
-  ExternalLink,
-  Menu,
-  X,
+  LockKeyhole,
+  Mail,
   Smartphone,
-  LogOut,
-  UserCog,
+  LogIn,
 } from "lucide-react";
 
-function AdminLayout({ children }) {
-  const [open, setOpen] = useState(false);
+import api from "../api/api";
 
+function AdminLogin() {
   const navigate = useNavigate();
 
-  // Logged-in user data
-  const role = localStorage.getItem("role");
-  const name = localStorage.getItem("name");
-  const email = localStorage.getItem("email");
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
 
-  const closeMenu = () => {
-    setOpen(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      navigate("/admin", {
+        replace: true,
+      });
+    }
+  }, [navigate]);
+
+  const handleChange = (e) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("name");
-    localStorage.removeItem("email");
+  const handleLogin = async (e) => {
+    e.preventDefault();
 
-    navigate("/admin/login");
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await api.post(
+        "/auth/login",
+        form
+      );
+
+      localStorage.setItem(
+        "token",
+        response.data.token
+      );
+
+      localStorage.setItem(
+        "role",
+        response.data.role
+      );
+
+      localStorage.setItem(
+        "name",
+        response.data.name
+      );
+
+      localStorage.setItem(
+        "email",
+        response.data.email
+      );
+
+      navigate("/admin", {
+        replace: true,
+      });
+
+    } catch (error) {
+      console.error("Login error:", error);
+
+      setError(
+        error.response?.data?.error ||
+        "Invalid email or password."
+      );
+
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="admin-app">
+    <div className="login-page">
 
-      {/* MOBILE HEADER */}
-      <header className="mobile-topbar">
+      <div className="login-card">
 
-        <div className="brand-wrap">
+        <div className="login-brand">
 
-          <div className="brand-logo">
-            <Smartphone size={18} />
+          <div className="login-logo">
+            <Smartphone size={24} />
           </div>
 
-          <div className="brand-name">
+          <h1>
             iPhone<span>Fixit</span>
-          </div>
+          </h1>
 
         </div>
 
-        <button
-          className="mobile-menu-btn"
-          onClick={() => setOpen(true)}
+        <div className="login-heading">
+
+          <h2>Welcome back</h2>
+
+          <p>
+            Sign in to manage repair jobs.
+          </p>
+
+        </div>
+
+        <form
+          className="login-form"
+          onSubmit={handleLogin}
         >
-          <Menu size={23} />
-        </button>
 
-      </header>
+          <label>Email</label>
 
-      {/* MOBILE BACKDROP */}
-      {open && (
-        <div
-          className="sidebar-backdrop"
-          onClick={closeMenu}
-        />
-      )}
+          <div className="login-input">
 
-      {/* SIDEBAR */}
-      <aside
-        className={`admin-sidebar ${
-          open ? "show-sidebar" : ""
-        }`}
-      >
+            <Mail size={18} />
 
-        <div className="sidebar-header">
-
-          <div className="brand-wrap">
-
-            <div className="brand-logo">
-              <Smartphone size={18} />
-            </div>
-
-            <div className="brand-name">
-              iPhone<span>Fixit</span>
-            </div>
+            <input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              placeholder="admin@iphonefixit.com"
+              autoComplete="email"
+              required
+            />
 
           </div>
 
-          <button
-            className="sidebar-close-btn"
-            onClick={closeMenu}
-          >
-            <X size={22} />
-          </button>
+          <label>Password</label>
 
-        </div>
+          <div className="login-input">
 
-        <div className="menu-label">
-          WORKSPACE
-        </div>
+            <LockKeyhole size={18} />
 
-        <nav className="sidebar-menu">
+            <input
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              placeholder="Enter password"
+              autoComplete="current-password"
+              required
+            />
 
-          <NavLink
-            to="/admin"
-            end
-            onClick={closeMenu}
-          >
-            <LayoutDashboard size={18} />
-            Dashboard
-          </NavLink>
+          </div>
 
-          <NavLink
-            to="/admin/new-repair"
-            onClick={closeMenu}
-          >
-            <Plus size={18} />
-            New Repair
-          </NavLink>
-
-          <NavLink
-            to="/admin/repairs"
-            onClick={closeMenu}
-          >
-            <Wrench size={18} />
-            All Repairs
-          </NavLink>
-
-          <NavLink
-            to="/admin/customers"
-            onClick={closeMenu}
-          >
-            <Users size={18} />
-            Customers
-          </NavLink>
-
-          {/* ADMIN ONLY */}
-          {role === "ROLE_ADMIN" && (
-            <NavLink
-              to="/admin/subadmins"
-              onClick={closeMenu}
-            >
-              <UserCog size={18} />
-              Subadmins
-            </NavLink>
+          {error && (
+            <div className="login-error">
+              {error}
+            </div>
           )}
 
-          <NavLink
-            to="/track"
-            onClick={closeMenu}
-          >
-            <ExternalLink size={18} />
-            Customer Website
-          </NavLink>
-
-        </nav>
-
-        {/* SIDEBAR BOTTOM */}
-        <div className="sidebar-footer">
-
           <button
-            className="sidebar-add-btn"
-            onClick={() => {
-              navigate("/admin/new-repair");
-              closeMenu();
-            }}
+            type="submit"
+            className="login-btn"
+            disabled={loading}
           >
-            <Plus size={18} />
-            Add Repair
+
+            <LogIn size={17} />
+
+            {loading
+              ? "Signing in..."
+              : "Sign In"}
+
           </button>
 
-          <div className="logged-user">
+        </form>
 
-            <strong>
-              {name || "User"}
-            </strong>
-
-            <span>
-              {role === "ROLE_ADMIN"
-                ? "Administrator"
-                : "Subadmin"}
-            </span>
-
-            {email && (
-              <small>
-                {email}
-              </small>
-            )}
-
-          </div>
-
-          <button
-            className="logout-btn"
-            onClick={logout}
-          >
-            <LogOut size={17} />
-            Logout
-          </button>
-
-        </div>
-
-      </aside>
-
-      {/* PAGE CONTENT */}
-      <main className="admin-page">
-        {children}
-      </main>
+      </div>
 
     </div>
   );
 }
 
-export default AdminLayout;
+export default AdminLogin;

@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import {
+  NavLink,
+  useNavigate,
+} from "react-router-dom";
 
 import {
   LayoutDashboard,
@@ -10,20 +13,49 @@ import {
   Menu,
   X,
   Smartphone,
+  LogOut,
+  UserCog,
 } from "lucide-react";
 
 function AdminLayout({ children }) {
-  const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
+  const [open, setOpen] =
+    useState(false);
 
-  const closeMenu = () => setOpen(false);
+  const navigate =
+    useNavigate();
+
+  const role =
+    localStorage.getItem("role");
+
+  const name =
+    localStorage.getItem("name");
+
+  const email =
+    localStorage.getItem("email");
+
+  const closeMenu = () => {
+    setOpen(false);
+  };
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("name");
+    localStorage.removeItem("email");
+
+    navigate("/admin/login", {
+      replace: true,
+    });
+  };
 
   return (
     <div className="admin-app">
 
+      {/* MOBILE HEADER */}
       <header className="mobile-topbar">
 
         <div className="brand-wrap">
+
           <div className="brand-logo">
             <Smartphone size={18} />
           </div>
@@ -31,17 +63,22 @@ function AdminLayout({ children }) {
           <div className="brand-name">
             iPhone<span>Fixit</span>
           </div>
+
         </div>
 
         <button
+          type="button"
           className="mobile-menu-btn"
-          onClick={() => setOpen(true)}
+          onClick={() =>
+            setOpen(true)
+          }
         >
           <Menu size={23} />
         </button>
 
       </header>
 
+      {/* BACKDROP */}
       {open && (
         <div
           className="sidebar-backdrop"
@@ -49,7 +86,14 @@ function AdminLayout({ children }) {
         />
       )}
 
-      <aside className={`admin-sidebar ${open ? "show-sidebar" : ""}`}>
+      {/* SIDEBAR */}
+      <aside
+        className={`admin-sidebar ${
+          open
+            ? "show-sidebar"
+            : ""
+        }`}
+      >
 
         <div className="sidebar-header">
 
@@ -66,6 +110,7 @@ function AdminLayout({ children }) {
           </div>
 
           <button
+            type="button"
             className="sidebar-close-btn"
             onClick={closeMenu}
           >
@@ -113,6 +158,17 @@ function AdminLayout({ children }) {
             Customers
           </NavLink>
 
+          {/* ADMIN ONLY */}
+          {role === "ROLE_ADMIN" && (
+            <NavLink
+              to="/admin/subadmins"
+              onClick={closeMenu}
+            >
+              <UserCog size={18} />
+              Subadmins
+            </NavLink>
+          )}
+
           <NavLink
             to="/track"
             onClick={closeMenu}
@@ -126,9 +182,13 @@ function AdminLayout({ children }) {
         <div className="sidebar-footer">
 
           <button
+            type="button"
             className="sidebar-add-btn"
             onClick={() => {
-              navigate("/admin/new-repair");
+              navigate(
+                "/admin/new-repair"
+              );
+
               closeMenu();
             }}
           >
@@ -136,7 +196,34 @@ function AdminLayout({ children }) {
             Add Repair
           </button>
 
-          <p>Repair Management System</p>
+          <div className="logged-user">
+
+            <strong>
+              {name || "User"}
+            </strong>
+
+            <span>
+              {role === "ROLE_ADMIN"
+                ? "Administrator"
+                : "Subadmin"}
+            </span>
+
+            {email && (
+              <small>
+                {email}
+              </small>
+            )}
+
+          </div>
+
+          <button
+            type="button"
+            className="logout-btn"
+            onClick={logout}
+          >
+            <LogOut size={17} />
+            Logout
+          </button>
 
         </div>
 
