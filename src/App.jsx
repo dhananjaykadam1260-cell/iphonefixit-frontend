@@ -1,60 +1,21 @@
-import {
-  Navigate,
-  Route,
-  Routes,
-} from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
-import ProtectedRoute
-  from "./components/ProtectedRoute";
-
-import AdminLogin
-  from "./pages/AdminLogin";
-
-import AdminDashboard
-  from "./pages/AdminDashboard";
-
-import NewRepair
-  from "./pages/NewRepair";
-
-import AllRepairs
-  from "./pages/AllRepairs";
-
-import RepairDetails
-  from "./pages/RepairDetails";
-
-import Customers
-  from "./pages/Customers";
-
-import SubAdmins
-  from "./pages/SubAdmins";
-
-import TrackRepair
-  from "./pages/TrackRepair";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminLogin from "./pages/AdminLogin";
+import AllRepairs from "./pages/AllRepairs";
+import Customers from "./pages/Customers";
+import NewRepair from "./pages/NewRepair";
+import RepairDetails from "./pages/RepairDetails";
+import SubAdmins from "./pages/SubAdmins";
+import TrackRepair from "./pages/TrackRepair";
 
 function App() {
   return (
     <Routes>
-
-      {/* CUSTOMER WEBSITE */}
-
-      <Route
-        path="/"
-        element={<TrackRepair />}
-      />
-
-      <Route
-        path="/track"
-        element={<TrackRepair />}
-      />
-
-      {/* LOGIN */}
-
-      <Route
-        path="/admin/login"
-        element={<AdminLogin />}
-      />
-
-      {/* ADMIN + SUBADMIN */}
+      <Route path="/" element={<TrackRepair />} />
+      <Route path="/track" element={<TrackRepair />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
 
       <Route
         path="/admin"
@@ -101,29 +62,16 @@ function App() {
         }
       />
 
-      {/* MAIN ADMIN ONLY */}
-
       <Route
         path="/admin/subadmins"
         element={
-          <ProtectedRoute
-            adminOnly
-          >
+          <ProtectedRoute adminOnly>
             <SubAdmins />
           </ProtectedRoute>
         }
       />
 
-      <Route
-        path="*"
-        element={
-          <Navigate
-            to="/"
-            replace
-          />
-        }
-      />
-
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

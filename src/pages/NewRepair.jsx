@@ -1,12 +1,18 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
 
 import {
   Camera,
-  User,
-  Smartphone,
-  Wrench,
   Save,
+  Smartphone,
+  User,
+  Wrench,
 } from "lucide-react";
 
 import api from "../api/api";
@@ -23,87 +29,364 @@ function NewRepair() {
     problem: "",
   });
 
-  const [image, setImage] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [image, setImage] =
+    useState(null);
 
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [preview, setPreview] =
+    useState(null);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [message, setMessage] =
+    useState("");
+
+  const [messageType, setMessageType] =
+    useState("error");
+
+  useEffect(() => {
+    return () => {
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
 
   const change = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    const {
+      name,
+      value,
+    } = e.target;
+
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  };
+
+  const changePhone = (e) => {
+    const value =
+      e.target.value.replace(
+        /[^0-9]/g,
+        ""
+      );
+
+    setForm((current) => ({
+      ...current,
+      phoneNumber: value,
+    }));
   };
 
   const selectImage = (e) => {
-    const file = e.target.files?.[0];
+    const file =
+      e.target.files?.[0];
 
-    if (!file) return;
+    if (!file) {
+      return;
+    }
+
+    if (
+      !file.type.startsWith(
+        "image/"
+      )
+    ) {
+      setMessage(
+        "Please select a valid image."
+      );
+
+      setMessageType("error");
+
+      return;
+    }
+
+    if (
+      file.size >
+      10 * 1024 * 1024
+    ) {
+      setMessage(
+        "Image must be smaller than 10 MB."
+      );
+
+      setMessageType("error");
+
+      return;
+    }
+
+    if (preview) {
+      URL.revokeObjectURL(
+        preview
+      );
+    }
 
     setImage(file);
 
     setPreview(
-      URL.createObjectURL(file)
+      URL.createObjectURL(
+        file
+      )
     );
+
+    setMessage("");
   };
 
-  const findOrCreateCustomer = async () => {
-    try {
-      const response =
-        await api.get(`/customers/phone/${form.phoneNumber}`);
+  const findOrCreateCustomer =
+    async () => {
 
-      return response.data;
-    } catch {
-      const response =
-        await api.post("/customers", {
-          name: form.name,
-          phoneNumber: form.phoneNumber,
-        });
+      const phoneNumber =
+        form.phoneNumber.trim();
 
-      return response.data;
-    }
-  };
+      try {
+        const response =
+          await api.get(
+            `/customers/phone/${encodeURIComponent(
+              phoneNumber
+            )}`
+          );
+
+        return response.data;
+
+      } catch (error) {
+
+        const status =
+          error.response?.status;
+
+        /*
+         * Your backend currently may return
+         * 400 or 404 when customer does not exist.
+         *
+         * Only then create a new customer.
+         */
+        if (
+          status !== 400 &&
+          status !== 404
+        ) {
+          throw error;
+        }
+
+        const response =
+          await api.post(
+            "/customers",
+            {
+              name:
+                form.name.trim(),
+
+              phoneNumber,
+            }
+          );
+
+        return response.data;
+      }
+    };
 
   const submit = async (e) => {
     e.preventDefault();
 
+    setMessage("");
+    setMessageType("error");
+
+    const name =
+      form.name.trim();
+
+    const phoneNumber =
+      form.phoneNumber.trim();
+
+    const deviceModel =
+      form.deviceModel.trim();
+
+    const serialNumber =
+      form.serialNumber.trim();
+
+    const problem =
+      form.problem.trim();
+
+    if (!name) {
+      setMessage(
+        "Please enter customer name."
+      );
+
+      return;
+    }
+
+    if (
+      !/^[0-9]{10,15}$/.test(
+        phoneNumber
+      )
+    ) {
+      setMessage(
+        "Please enter a valid phone number."
+      );
+
+      return;
+    }
+
+    if (!deviceModel) {
+      setMessage(
+        "Please enter device model."
+      );
+
+      return;
+    }
+
+    if (!problem) {
+      setMessage(
+        "Please enter repair problem."
+      );
+
+      return;
+    }
+
     if (!image) {
-      setMessage("Please add phone photo.");
+      setMessage(
+        "Please add a phone photo."
+      );
+
       return;
     }
 
     setLoading(true);
-    setMessage("");
 
     try {
+
+      /*
+       * STEP 1:
+       * Find existing customer
+       * or create new customer.
+       */
       const customer =
         await findOrCreateCustomer();
 
-      const data = new FormData();
+      if (!customer?.id) {
+        throw new Error(
+          "Customer ID was not returned by server."
+        );
+      }
 
-      data.append("deviceModel", form.deviceModel);
-      data.append("serialNumber", form.serialNumber);
-      data.append("problem", form.problem);
-      data.append("image", image);
+      /*
+       * STEP 2:
+       * Build multipart request.
+       */
+      const data =
+        new FormData();
 
+      data.append(
+        "deviceModel",
+        deviceModel
+      );
+
+      /*
+       * Keep serialNumber in request
+       * even when it is blank.
+       */
+      data.append(
+        "serialNumber",
+        serialNumber
+      );
+
+      data.append(
+        "problem",
+        problem
+      );
+
+      data.append(
+        "image",
+        image
+      );
+
+      /*
+       * STEP 3:
+       * Create repair.
+       *
+       * Do NOT manually set
+       * Content-Type multipart/form-data.
+       * Axios/browser creates the
+       * boundary automatically.
+       */
       const response =
         await api.post(
           `/repairs/customer/${customer.id}/with-image`,
           data
         );
 
-      navigate(`/admin/repair/${response.data.id}`);
+      if (!response.data?.id) {
+        throw new Error(
+          "Repair was created but no repair ID was returned."
+        );
+      }
 
-    } catch (error) {
-      console.error(error);
+      setMessageType(
+        "success"
+      );
 
       setMessage(
-        error.response?.data?.error ||
-        "Unable to create repair."
+        "Repair created successfully."
+      );
+
+      navigate(
+        `/admin/repair/${response.data.id}`
+      );
+
+    } catch (error) {
+
+      console.error(
+        "CREATE REPAIR ERROR:",
+        error
+      );
+
+      console.error(
+        "STATUS:",
+        error.response?.status
+      );
+
+      console.error(
+        "BACKEND RESPONSE:",
+        error.response?.data
+      );
+
+      let errorMessage =
+        "Unable to create repair.";
+
+      if (
+        error.response?.data?.error
+      ) {
+        errorMessage =
+          error.response.data.error;
+
+      } else if (
+        error.response?.data?.message
+      ) {
+        errorMessage =
+          error.response.data.message;
+
+      } else if (
+        typeof error.response?.data ===
+        "string"
+      ) {
+        errorMessage =
+          error.response.data;
+
+      } else if (
+        error.response?.status
+      ) {
+        errorMessage =
+          `Unable to create repair. Server returned ${error.response.status}.`;
+
+      } else if (
+        error.message
+      ) {
+        errorMessage =
+          error.message;
+      }
+
+      setMessageType(
+        "error"
+      );
+
+      setMessage(
+        errorMessage
       );
 
     } finally {
+
       setLoading(false);
     }
   };
@@ -119,10 +402,13 @@ function NewRepair() {
             CREATE JOB
           </span>
 
-          <h1>New Repair</h1>
+          <h1>
+            New Repair
+          </h1>
 
           <p>
-            Add the customer, device and repair problem.
+            Add the customer, device,
+            reported problem and intake photo.
           </p>
 
         </div>
@@ -136,6 +422,8 @@ function NewRepair() {
 
         <div>
 
+          {/* CUSTOMER */}
+
           <section className="ui-card form-section-card">
 
             <div className="form-section-heading">
@@ -145,8 +433,15 @@ function NewRepair() {
               </div>
 
               <div>
-                <h2>Customer Details</h2>
-                <p>Who owns this device?</p>
+
+                <h2>
+                  Customer Details
+                </h2>
+
+                <p>
+                  Who owns this device?
+                </p>
+
               </div>
 
             </div>
@@ -164,27 +459,45 @@ function NewRepair() {
               <Field
                 label="Phone Number"
                 name="phoneNumber"
-                value={form.phoneNumber}
-                change={change}
+                value={
+                  form.phoneNumber
+                }
+                change={
+                  changePhone
+                }
                 placeholder="9876543210"
                 type="tel"
+                inputMode="numeric"
+                maxLength={15}
               />
 
             </div>
 
           </section>
 
+          {/* DEVICE */}
+
           <section className="ui-card form-section-card">
 
             <div className="form-section-heading">
 
               <div className="form-section-icon">
-                <Smartphone size={19} />
+                <Smartphone
+                  size={19}
+                />
               </div>
 
               <div>
-                <h2>Device Details</h2>
-                <p>Information about the phone.</p>
+
+                <h2>
+                  Device Details
+                </h2>
+
+                <p>
+                  Information about
+                  the phone.
+                </p>
+
               </div>
 
             </div>
@@ -194,15 +507,19 @@ function NewRepair() {
               <Field
                 label="iPhone Model"
                 name="deviceModel"
-                value={form.deviceModel}
+                value={
+                  form.deviceModel
+                }
                 change={change}
-                placeholder="iPhone 15 Pro"
+                placeholder="iPhone 16 Pro"
               />
 
               <Field
                 label="Serial Number / IMEI"
                 name="serialNumber"
-                value={form.serialNumber}
+                value={
+                  form.serialNumber
+                }
                 change={change}
                 placeholder="Optional"
                 required={false}
@@ -212,30 +529,46 @@ function NewRepair() {
 
           </section>
 
+          {/* PROBLEM */}
+
           <section className="ui-card form-section-card">
 
             <div className="form-section-heading">
 
               <div className="form-section-icon">
-                <Wrench size={19} />
+
+                <Wrench
+                  size={19}
+                />
+
               </div>
 
               <div>
-                <h2>Repair Problem</h2>
-                <p>Describe what is wrong with the device.</p>
+
+                <h2>
+                  Repair Problem
+                </h2>
+
+                <p>
+                  Describe what is wrong
+                  with the device.
+                </p>
+
               </div>
 
             </div>
 
             <div className="app-field">
 
-              <label>Reported Problem</label>
+              <label>
+                Reported Problem
+              </label>
 
               <textarea
                 name="problem"
                 value={form.problem}
                 onChange={change}
-                placeholder="Example: Display damaged, touch not working..."
+                placeholder="Example: Battery issue, display damaged..."
                 required
               />
 
@@ -245,6 +578,8 @@ function NewRepair() {
 
         </div>
 
+        {/* RIGHT SIDE */}
+
         <aside>
 
           <section className="ui-card photo-card">
@@ -252,12 +587,23 @@ function NewRepair() {
             <div className="form-section-heading">
 
               <div className="form-section-icon">
-                <Camera size={19} />
+
+                <Camera
+                  size={19}
+                />
+
               </div>
 
               <div>
-                <h2>Phone Photo</h2>
-                <p>Photo before starting repair.</p>
+
+                <h2>
+                  Phone Photo
+                </h2>
+
+                <p>
+                  Photo before starting repair.
+                </p>
+
               </div>
 
             </div>
@@ -265,31 +611,40 @@ function NewRepair() {
             <label className="upload-box">
 
               {preview ? (
+
                 <img
                   src={preview}
                   alt="Phone preview"
                 />
+
               ) : (
+
                 <div className="upload-empty">
 
-                  <Camera size={30} />
+                  <Camera
+                    size={30}
+                  />
 
                   <strong>
                     Take or upload photo
                   </strong>
 
                   <span>
-                    JPG, PNG or phone camera
+                    JPG, PNG, WEBP
+                    or phone camera
                   </span>
 
                 </div>
+
               )}
 
               <input
                 type="file"
                 accept="image/*"
                 capture="environment"
-                onChange={selectImage}
+                onChange={
+                  selectImage
+                }
               />
 
             </label>
@@ -297,12 +652,22 @@ function NewRepair() {
           </section>
 
           {message && (
-            <div className="error-message">
+
+            <div
+              className={
+                messageType ===
+                "success"
+                  ? "success-message"
+                  : "error-message"
+              }
+            >
               {message}
             </div>
+
           )}
 
           <button
+            type="submit"
             className="btn btn-primary submit-repair-btn"
             disabled={loading}
           >
@@ -310,7 +675,7 @@ function NewRepair() {
             <Save size={17} />
 
             {loading
-              ? "Creating..."
+              ? "Creating Repair..."
               : "Create Repair"}
 
           </button>
@@ -331,11 +696,15 @@ function Field({
   placeholder,
   type = "text",
   required = true,
+  inputMode,
+  maxLength,
 }) {
   return (
     <div className="app-field">
 
-      <label>{label}</label>
+      <label>
+        {label}
+      </label>
 
       <input
         type={type}
@@ -344,6 +713,8 @@ function Field({
         onChange={change}
         placeholder={placeholder}
         required={required}
+        inputMode={inputMode}
+        maxLength={maxLength}
       />
 
     </div>
