@@ -13,6 +13,7 @@ import {
   Smartphone,
   User,
   Wrench,
+  X,
 } from "lucide-react";
 
 import api from "../api/api";
@@ -129,6 +130,17 @@ function NewRepair() {
     setMessage("");
   };
 
+  const removeImage = () => {
+    if (preview) {
+      URL.revokeObjectURL(
+        preview
+      );
+    }
+
+    setImage(null);
+    setPreview(null);
+  };
+
   const findOrCreateCustomer =
     async () => {
 
@@ -150,12 +162,6 @@ function NewRepair() {
         const status =
           error.response?.status;
 
-        /*
-         * Your backend currently may return
-         * 400 or 404 when customer does not exist.
-         *
-         * Only then create a new customer.
-         */
         if (
           status !== 400 &&
           status !== 404
@@ -170,7 +176,8 @@ function NewRepair() {
               name:
                 form.name.trim(),
 
-              phoneNumber,
+              phoneNumber:
+                phoneNumber,
             }
           );
 
@@ -235,36 +242,22 @@ function NewRepair() {
       return;
     }
 
-    if (!image) {
-      setMessage(
-        "Please add a phone photo."
-      );
-
-      return;
-    }
+    // PHOTO IS OPTIONAL
+    // No validation requiring an image.
 
     setLoading(true);
 
     try {
 
-      /*
-       * STEP 1:
-       * Find existing customer
-       * or create new customer.
-       */
       const customer =
         await findOrCreateCustomer();
 
       if (!customer?.id) {
         throw new Error(
-          "Customer ID was not returned by server."
+          "Customer ID not returned."
         );
       }
 
-      /*
-       * STEP 2:
-       * Build multipart request.
-       */
       const data =
         new FormData();
 
@@ -273,10 +266,6 @@ function NewRepair() {
         deviceModel
       );
 
-      /*
-       * Keep serialNumber in request
-       * even when it is blank.
-       */
       data.append(
         "serialNumber",
         serialNumber
@@ -287,20 +276,14 @@ function NewRepair() {
         problem
       );
 
-      data.append(
-        "image",
-        image
-      );
+      // Only append image when selected
+      if (image) {
+        data.append(
+          "image",
+          image
+        );
+      }
 
-      /*
-       * STEP 3:
-       * Create repair.
-       *
-       * Do NOT manually set
-       * Content-Type multipart/form-data.
-       * Axios/browser creates the
-       * boundary automatically.
-       */
       const response =
         await api.post(
           `/repairs/customer/${customer.id}/with-image`,
@@ -309,7 +292,7 @@ function NewRepair() {
 
       if (!response.data?.id) {
         throw new Error(
-          "Repair was created but no repair ID was returned."
+          "Repair ID not returned."
         );
       }
 
@@ -338,7 +321,7 @@ function NewRepair() {
       );
 
       console.error(
-        "BACKEND RESPONSE:",
+        "RESPONSE:",
         error.response?.data
       );
 
@@ -358,17 +341,10 @@ function NewRepair() {
           error.response.data.message;
 
       } else if (
-        typeof error.response?.data ===
-        "string"
-      ) {
-        errorMessage =
-          error.response.data;
-
-      } else if (
         error.response?.status
       ) {
         errorMessage =
-          `Unable to create repair. Server returned ${error.response.status}.`;
+          `Server error ${error.response.status}.`;
 
       } else if (
         error.message
@@ -386,7 +362,6 @@ function NewRepair() {
       );
 
     } finally {
-
       setLoading(false);
     }
   };
@@ -407,8 +382,8 @@ function NewRepair() {
           </h1>
 
           <p>
-            Add the customer, device,
-            reported problem and intake photo.
+            Add customer, device,
+            problem and optional phone photo.
           </p>
 
         </div>
@@ -482,9 +457,11 @@ function NewRepair() {
             <div className="form-section-heading">
 
               <div className="form-section-icon">
+
                 <Smartphone
                   size={19}
                 />
+
               </div>
 
               <div>
@@ -494,8 +471,7 @@ function NewRepair() {
                 </h2>
 
                 <p>
-                  Information about
-                  the phone.
+                  Information about the phone.
                 </p>
 
               </div>
@@ -550,8 +526,7 @@ function NewRepair() {
                 </h2>
 
                 <p>
-                  Describe what is wrong
-                  with the device.
+                  Describe the device problem.
                 </p>
 
               </div>
@@ -568,7 +543,7 @@ function NewRepair() {
                 name="problem"
                 value={form.problem}
                 onChange={change}
-                placeholder="Example: Battery issue, display damaged..."
+                placeholder="Example: Charging issue, display damaged..."
                 required
               />
 
@@ -601,7 +576,7 @@ function NewRepair() {
                 </h2>
 
                 <p>
-                  Photo before starting repair.
+                  Optional intake photo.
                 </p>
 
               </div>
@@ -630,8 +605,8 @@ function NewRepair() {
                   </strong>
 
                   <span>
-                    JPG, PNG, WEBP
-                    or phone camera
+                    Optional · JPG, PNG,
+                    WEBP or camera
                   </span>
 
                 </div>
@@ -648,6 +623,22 @@ function NewRepair() {
               />
 
             </label>
+
+            {preview && (
+
+              <button
+                type="button"
+                className="remove-photo-btn"
+                onClick={removeImage}
+              >
+
+                <X size={15} />
+
+                Remove Photo
+
+              </button>
+
+            )}
 
           </section>
 
