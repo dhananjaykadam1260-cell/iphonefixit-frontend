@@ -30,7 +30,7 @@ function NewSale() {
 
   const loadInventory = async () => {
     try {
-      const response = await api.get("/admin/items");
+      const response = await api.get("/items");
 
       const activeItems = Array.isArray(response.data)
         ? response.data.filter(

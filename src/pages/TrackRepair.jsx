@@ -9,11 +9,13 @@ import {
 } from "react-router-dom";
 
 import {
+  AlertCircle,
   ArrowRight,
   CheckCircle2,
   Clock,
   Download,
   ExternalLink,
+  Loader2,
   LogIn,
   MapPin,
   MessageCircle,
@@ -27,6 +29,8 @@ import {
 } from "lucide-react";
 
 import api from "../api/api";
+
+import "./TrackRepair.css";
 
 function TrackRepair() {
   const navigate = useNavigate();
@@ -59,10 +63,6 @@ function TrackRepair() {
   const apiUrl =
     import.meta.env.VITE_API_URL ||
     "http://localhost:8080/api";
-
-  /* =========================
-     LOAD STORE + ITEMS
-  ========================= */
 
   useEffect(() => {
     const loadStoreData = async () => {
@@ -97,10 +97,6 @@ function TrackRepair() {
     loadStoreData();
   }, []);
 
-  /* =========================
-     STORE CATEGORIES
-  ========================= */
-
   const storeCategories =
     useMemo(() => {
       return [
@@ -113,10 +109,6 @@ function TrackRepair() {
         ),
       ].sort();
     }, [items]);
-
-  /* =========================
-     FILTER STORE ITEMS
-  ========================= */
 
   const filteredStoreItems =
     useMemo(() => {
@@ -172,10 +164,6 @@ function TrackRepair() {
       itemCategory,
     ]);
 
-  /* =========================
-     GROUP ITEMS
-  ========================= */
-
   const groupedItems =
     useMemo(() => {
       return filteredStoreItems.reduce(
@@ -187,29 +175,19 @@ function TrackRepair() {
             item.category ||
             "Other";
 
-          if (
-            !groups[
-              category
-            ]
-          ) {
-            groups[
-              category
-            ] = [];
+          if (!groups[category]) {
+            groups[category] = [];
           }
 
-          groups[
-            category
-          ].push(item);
+          groups[category].push(
+            item
+          );
 
           return groups;
         },
         {}
       );
     }, [filteredStoreItems]);
-
-  /* =========================
-     TRACK REPAIR
-  ========================= */
 
   const searchRepair =
     async (e) => {
@@ -262,13 +240,14 @@ function TrackRepair() {
         setRepairs([]);
 
         if (
-          err.response
-            ?.status !==
+          err.response?.status !==
           404
         ) {
           setError(
             err.response?.data
               ?.error ||
+              err.response?.data
+                ?.message ||
               "Unable to search repairs. Please try again."
           );
         }
@@ -276,10 +255,6 @@ function TrackRepair() {
         setLoading(false);
       }
     };
-
-  /* =========================
-     PDF
-  ========================= */
 
   const downloadBill =
     (repairId) => {
@@ -289,10 +264,6 @@ function TrackRepair() {
         "noopener,noreferrer"
       );
     };
-
-  /* =========================
-     WHATSAPP
-  ========================= */
 
   const getWhatsAppNumber =
     (number) => {
@@ -307,8 +278,7 @@ function TrackRepair() {
         );
 
       if (
-        cleaned.length ===
-        10
+        cleaned.length === 10
       ) {
         cleaned =
           `91${cleaned}`;
@@ -317,33 +287,63 @@ function TrackRepair() {
       return cleaned;
     };
 
+  const formatDate = (value) => {
+    if (!value) {
+      return "Pending";
+    }
+
+    const date =
+      new Date(value);
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      return value;
+    }
+
+    return date.toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }
+    );
+  };
+
   return (
     <div className="customer-site">
 
-      {/* HEADER */}
-
       <header className="customer-header">
-
         <div className="customer-container customer-nav-row">
 
-          <div className="customer-brand">
-
+          <button
+            type="button"
+            className="customer-brand customer-brand-button"
+            onClick={() =>
+              window.scrollTo({
+                top: 0,
+                behavior: "smooth",
+              })
+            }
+          >
             <div className="customer-brand-logo">
-              <Smartphone size={18} />
+              <Smartphone size={19} />
             </div>
 
-            iPhone<span>Fixit</span>
-
-          </div>
+            <div>
+              iPhone
+              <span>Fixit</span>
+            </div>
+          </button>
 
           <div className="customer-nav-actions">
 
             <div className="secure-text">
-
               <ShieldCheck size={16} />
-
               Secure Repair Tracking
-
             </div>
 
             <button
@@ -362,294 +362,869 @@ function TrackRepair() {
           </div>
 
         </div>
-
       </header>
 
-      {/* HERO */}
+      <main>
 
-      <section className="customer-hero">
+        <section className="customer-hero">
 
-        <div className="customer-container track-hero-grid">
+          <div className="customer-container track-hero-grid">
 
-          <div className="track-copy">
+            <div className="track-copy">
 
-            <div className="track-tag">
-              <Wrench size={14} />
-              Live Repair Status
-            </div>
+              <div className="track-tag">
+                <Wrench size={14} />
+                Live Repair Tracking
+              </div>
 
-            <h1>
-              Know exactly where
-              your iPhone repair
-              stands.
-            </h1>
+              <h1>
+                Track your iPhone
+                repair in real time.
+              </h1>
 
-            <p>
-              Enter the mobile
-              number used at the
-              shop to view device
-              details, repair
-              status, final cost
-              and your PDF bill.
-            </p>
+              <p className="track-hero-description">
+                Enter the mobile
+                number used at the
+                store to instantly
+                check your repair
+                status, device details,
+                cost and invoice.
+              </p>
 
-            <form
-              className="track-search"
-              onSubmit={
-                searchRepair
-              }
-            >
-
-              <Phone size={19} />
-
-              <input
-                type="tel"
-                inputMode="numeric"
-                maxLength={15}
-                value={phone}
-                onChange={(e) => {
-                  setPhone(
-                    e.target.value.replace(
-                      /[^0-9]/g,
-                      ""
-                    )
-                  );
-
-                  setError("");
-                }}
-                placeholder="Enter mobile number"
-                required
-              />
-
-              <button
-                type="submit"
-                disabled={loading}
+              <form
+                className="track-search"
+                onSubmit={
+                  searchRepair
+                }
               >
-                <Search
-                  size={17}
+                <div className="track-input-wrap">
+
+                  <Phone
+                    size={19}
+                    className="track-input-icon"
+                  />
+
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={15}
+                    value={phone}
+                    onChange={(e) => {
+                      setPhone(
+                        e.target.value.replace(
+                          /[^0-9]/g,
+                          ""
+                        )
+                      );
+
+                      setError("");
+                    }}
+                    placeholder="Enter mobile number"
+                    aria-label="Mobile number"
+                    required
+                  />
+
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <Loader2
+                      size={17}
+                      className="track-spinner"
+                    />
+                  ) : (
+                    <Search
+                      size={17}
+                    />
+                  )}
+
+                  {loading
+                    ? "Searching..."
+                    : "Track Repair"}
+                </button>
+              </form>
+
+              {error && (
+                <div className="track-error">
+                  <AlertCircle
+                    size={17}
+                  />
+
+                  <span>
+                    {error}
+                  </span>
+                </div>
+              )}
+
+              <div className="track-note">
+                <ShieldCheck
+                  size={16}
                 />
 
-                {loading
-                  ? "Searching..."
-                  : "Track Repair"}
-              </button>
+                <div>
+                  <strong>
+                    Private & secure
+                  </strong>
 
-            </form>
+                  <span>
+                    Only the phone
+                    number registered
+                    during repair intake
+                    can access the
+                    repair record.
+                  </span>
+                </div>
+              </div>
 
-            {error && (
-              <div className="track-error">
-                {error}
+            </div>
+
+            <div
+              className="track-visual"
+              aria-hidden="true"
+            >
+
+              <div className="hero-glow" />
+
+              <div className="hero-phone">
+
+                <div className="hero-phone-top" />
+
+                <div className="hero-phone-screen">
+
+                  <div className="hero-phone-statusbar">
+                    <span>9:41</span>
+                    <span>
+                      ● ● ●
+                    </span>
+                  </div>
+
+                  <div className="visual-badge">
+                    Repair #1042
+                  </div>
+
+                  <div className="visual-device">
+                    iPhone 15 Pro
+                  </div>
+
+                  <div className="visual-device-sub">
+                    Screen Replacement
+                  </div>
+
+                  <div className="visual-line" />
+
+                  <MiniStep
+                    label="Received"
+                    done
+                  />
+
+                  <MiniStep
+                    label="Checking"
+                    done
+                  />
+
+                  <MiniStep
+                    label="Repairing"
+                    active
+                  />
+
+                  <MiniStep
+                    label="Ready"
+                  />
+
+                </div>
+
+              </div>
+
+              <div className="floating-status-card">
+
+                <div className="floating-status-icon">
+                  <CheckCircle2
+                    size={18}
+                  />
+                </div>
+
+                <div>
+                  <strong>
+                    Live updates
+                  </strong>
+
+                  <span>
+                    Repair status
+                    updated instantly
+                  </span>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        <section className="customer-container tracking-results">
+
+          {searched &&
+            !loading &&
+            repairs.length === 0 &&
+            !error && (
+
+              <div className="no-results">
+
+                <div className="no-results-icon">
+                  <Smartphone
+                    size={35}
+                  />
+                </div>
+
+                <h2>
+                  No repair found
+                </h2>
+
+                <p>
+                  We couldn't find a
+                  repair linked to this
+                  phone number. Please
+                  check the number and
+                  try again.
+                </p>
+
               </div>
             )}
 
-            <div className="track-note">
+          {repairs.length > 0 && (
 
-              <ShieldCheck
-                size={14}
-              />
-
-              Only the number used
-              during repair intake
-              can access the repair
-              record.
-
-            </div>
-
-          </div>
-
-          {/* VISUAL */}
-
-          <div
-            className="track-visual"
-            aria-hidden="true"
-          >
-
-            <div className="hero-phone">
-
-              <div className="hero-phone-top" />
-
-              <div className="hero-phone-screen">
-
-                <div className="visual-badge">
-                  Repair #1042
-                </div>
-
-                <div className="visual-device">
-                  iPhone 15 Pro
-                </div>
-
-                <div className="visual-line" />
-
-                <MiniStep
-                  label="Received"
-                  done
-                />
-
-                <MiniStep
-                  label="Checking"
-                  done
-                />
-
-                <MiniStep
-                  label="Repairing"
-                  active
-                />
-
-                <MiniStep
-                  label="Ready"
-                />
-
-              </div>
-
-            </div>
-
-            <div className="floating-status-card">
-
-              <CheckCircle2
-                size={18}
-              />
+            <div className="results-heading">
 
               <div>
-                <strong>
-                  Live updates
-                </strong>
 
-                <span>
-                  Simple customer
-                  tracking
+                <span className="public-section-label">
+                  Your Repairs
                 </span>
+
+                <h2>
+                  {repairs.length}{" "}
+                  repair
+                  {repairs.length >
+                  1
+                    ? "s"
+                    : ""}{" "}
+                  found
+                </h2>
+
+                <p>
+                  Latest repair
+                  information from
+                  iPhoneFixit.
+                </p>
+
               </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-      {/* REPAIR RESULTS */}
-
-      <section className="customer-container tracking-results">
-
-        {searched &&
-          !loading &&
-          repairs.length ===
-            0 &&
-          !error && (
-
-            <div className="no-results">
-
-              <Smartphone
-                size={38}
-              />
-
-              <h2>
-                No repair found
-              </h2>
-
-              <p>
-                Please check the
-                phone number and
-                try again.
-              </p>
 
             </div>
 
           )}
 
-        {repairs.length >
-          0 && (
+          <div className="public-repair-list">
 
-          <div className="results-heading">
+            {repairs.map(
+              (repair) => (
 
-            <div>
+                <article
+                  className="public-repair-card"
+                  key={repair.id}
+                >
 
-              <span className="page-overline">
-                YOUR REPAIRS
-              </span>
+                  <div className="public-repair-header">
 
-              <h2>
-                {repairs.length}{" "}
-                repair
-                {repairs.length >
-                1
-                  ? "s"
-                  : ""}{" "}
-                found
-              </h2>
+                    <div>
 
-            </div>
+                      <span className="repair-id">
+                        Repair #
+                        {repair.id}
+                      </span>
 
-          </div>
+                      <h2>
+                        {repair.deviceModel ||
+                          "iPhone Repair"}
+                      </h2>
 
-        )}
+                      <p>
+                        {repair.customer
+                          ?.name ||
+                          "Customer"}
+                      </p>
 
-        {repairs.map(
-          (repair) => (
+                    </div>
 
-            <article
-              className="public-repair-card"
-              key={repair.id}
-            >
-
-              <div className="public-repair-header">
-
-                <div>
-
-                  <span className="repair-id">
-                    REPAIR #
-                    {repair.id}
-                  </span>
-
-                  <h2>
-                    {repair.deviceModel ||
-                      "iPhone Repair"}
-                  </h2>
-
-                  <p>
-                    {repair.customer
-                      ?.name ||
-                      "Customer"}
-                  </p>
-
-                </div>
-
-                <Status
-                  status={
-                    repair.status ||
-                    "RECEIVED"
-                  }
-                />
-
-              </div>
-
-              <div className="public-repair-body">
-
-                <div className="public-phone-photo">
-
-                  {repair.phoneImageUrl ? (
-
-                    <img
-                      src={`${backendUrl}${repair.phoneImageUrl}`}
-                      alt={
-                        repair.deviceModel ||
-                        "Phone"
+                    <Status
+                      status={
+                        repair.status ||
+                        "RECEIVED"
                       }
                     />
 
-                  ) : (
+                  </div>
 
-                    <div className="no-phone-image">
+                  <div className="public-repair-body">
 
-                      <Smartphone
-                        size={36}
+                    <div className="public-phone-photo">
+
+                      {repair.phoneImageUrl ? (
+
+                        <img
+                          src={`${backendUrl}${repair.phoneImageUrl}`}
+                          alt={
+                            repair.deviceModel ||
+                            "Phone"
+                          }
+                          loading="lazy"
+                        />
+
+                      ) : (
+
+                        <div className="no-phone-image">
+
+                          <Smartphone
+                            size={38}
+                          />
+
+                          <strong>
+                            Device Photo
+                          </strong>
+
+                          <span>
+                            No photo
+                            available
+                          </span>
+
+                        </div>
+
+                      )}
+
+                    </div>
+
+                    <div className="public-details-area">
+
+                      <div className="public-details-grid">
+
+                        <PublicInfo
+                          title="Received"
+                          value={
+                            formatDate(
+                              repair.receivedDate
+                            )
+                          }
+                        />
+
+                        <PublicInfo
+                          title="Current Status"
+                          value={
+                            formatStatus(
+                              repair.status
+                            )
+                          }
+                        />
+
+                        <PublicInfo
+                          title="Problem"
+                          value={
+                            repair.problem ||
+                            "-"
+                          }
+                        />
+
+                        <PublicInfo
+                          title="Final Cost"
+                          value={
+                            repair.finalRepairCost !=
+                            null
+                              ? `₹${Number(
+                                  repair.finalRepairCost
+                                ).toLocaleString(
+                                  "en-IN"
+                                )}`
+                              : "Pending"
+                          }
+                          highlight={
+                            repair.finalRepairCost !=
+                            null
+                          }
+                        />
+
+                        <PublicInfo
+                          title="Delivered"
+                          value={
+                            repair.deliveryDate
+                              ? formatDate(
+                                  repair.deliveryDate
+                                )
+                              : "Pending"
+                          }
+                        />
+
+                        <PublicInfo
+                          title="Repair ID"
+                          value={`#${repair.id}`}
+                        />
+
+                      </div>
+
+                      <RepairProgress
+                        status={
+                          repair.status ||
+                          "RECEIVED"
+                        }
+                      />
+
+                    </div>
+
+                  </div>
+
+                  <div className="public-repair-footer">
+
+                    <div className="repair-support-text">
+                      <MessageCircle
+                        size={16}
                       />
 
                       <span>
-                        No photo
-                        available
+                        Need help?
+                        Contact the
+                        store with
+                        repair ID{" "}
+                        <strong>
+                          #{repair.id}
+                        </strong>
                       </span>
+                    </div>
+
+                    {repair.finalRepairCost !=
+                      null && (
+
+                      <button
+                        type="button"
+                        className="public-download-btn"
+                        onClick={() =>
+                          downloadBill(
+                            repair.id
+                          )
+                        }
+                      >
+                        <Download
+                          size={17}
+                        />
+
+                        Download PDF Bill
+
+                        <ArrowRight
+                          size={16}
+                        />
+                      </button>
+
+                    )}
+
+                  </div>
+
+                </article>
+
+              )
+            )}
+
+          </div>
+
+        </section>
+
+        {items.length > 0 && (
+
+          <section className="store-public-wrapper">
+
+            <div className="customer-container store-public-section">
+
+              <div className="public-section-heading">
+
+                <span className="public-section-label">
+                  Our Store
+                </span>
+
+                <h2>
+                  Accessories &
+                  Repair Products
+                </h2>
+
+                <p>
+                  Browse available
+                  products, accessories
+                  and replacement parts
+                  currently stocked at
+                  our store.
+                </p>
+
+              </div>
+
+              <div className="public-store-toolbar">
+
+                <div className="public-store-search">
+
+                  <Search
+                    size={18}
+                  />
+
+                  <input
+                    type="text"
+                    value={
+                      itemSearch
+                    }
+                    onChange={(e) =>
+                      setItemSearch(
+                        e.target.value
+                      )
+                    }
+                    placeholder="Search products, brands or categories..."
+                  />
+
+                </div>
+
+                <div className="public-store-count">
+                  <Package
+                    size={16}
+                  />
+
+                  {
+                    filteredStoreItems.length
+                  }{" "}
+                  products
+                </div>
+
+              </div>
+
+              <div className="public-category-filters">
+
+                <button
+                  type="button"
+                  className={
+                    itemCategory ===
+                    "ALL"
+                      ? "public-category-btn active"
+                      : "public-category-btn"
+                  }
+                  onClick={() =>
+                    setItemCategory(
+                      "ALL"
+                    )
+                  }
+                >
+                  All Products
+                </button>
+
+                {storeCategories.map(
+                  (category) => (
+
+                    <button
+                      type="button"
+                      key={category}
+                      className={
+                        itemCategory ===
+                        category
+                          ? "public-category-btn active"
+                          : "public-category-btn"
+                      }
+                      onClick={() =>
+                        setItemCategory(
+                          category
+                        )
+                      }
+                    >
+                      {category}
+                    </button>
+
+                  )
+                )}
+
+              </div>
+
+              {filteredStoreItems.length ===
+              0 ? (
+
+                <div className="store-no-items">
+
+                  <div className="store-empty-icon">
+                    <Package
+                      size={34}
+                    />
+                  </div>
+
+                  <strong>
+                    No products found
+                  </strong>
+
+                  <span>
+                    Try another search
+                    or choose a
+                    different category.
+                  </span>
+
+                </div>
+
+              ) : (
+
+                Object.entries(
+                  groupedItems
+                ).map(
+                  ([
+                    category,
+                    categoryItems,
+                  ]) => (
+
+                    <div
+                      className="store-category-group"
+                      key={category}
+                    >
+
+                      <div className="store-category-heading">
+
+                        <div>
+
+                          <span>
+                            Category
+                          </span>
+
+                          <h3>
+                            {category}
+                          </h3>
+
+                        </div>
+
+                        <small>
+                          {
+                            categoryItems.length
+                          }{" "}
+                          item
+                          {categoryItems.length !==
+                          1
+                            ? "s"
+                            : ""}
+                        </small>
+
+                      </div>
+
+                      <div className="store-items-grid">
+
+                        {categoryItems.map(
+                          (item) => {
+
+                            const inStock =
+                              Number(
+                                item.stockQuantity ||
+                                0
+                              ) > 0;
+
+                            return (
+                              <article
+                                className={`store-item-card ${
+                                  !inStock
+                                    ? "store-item-out"
+                                    : ""
+                                }`}
+                                key={
+                                  item.id
+                                }
+                              >
+
+                                {!inStock && (
+                                  <div className="store-out-overlay">
+                                    Out of Stock
+                                  </div>
+                                )}
+
+                                <div className="store-product-icon">
+
+                                  <Package
+                                    size={24}
+                                  />
+
+                                </div>
+
+                                <div className="store-product-content">
+
+                                  <span className="store-item-category">
+                                    {item.category ||
+                                      "Other"}
+                                  </span>
+
+                                  <h3>
+                                    {
+                                      item.name
+                                    }
+                                  </h3>
+
+                                  {item.brand && (
+
+                                    <small className="store-brand">
+                                      {
+                                        item.brand
+                                      }
+                                    </small>
+
+                                  )}
+
+                                  <p>
+                                    {item.description ||
+                                      "Available at our store."}
+                                  </p>
+
+                                </div>
+
+                                <div className="store-item-bottom">
+
+                                  <strong>
+                                    ₹
+                                    {Number(
+                                      item.price ||
+                                      0
+                                    ).toLocaleString(
+                                      "en-IN"
+                                    )}
+                                  </strong>
+
+                                  <span
+                                    className={
+                                      inStock
+                                        ? "customer-stock"
+                                        : "customer-out-stock"
+                                    }
+                                  >
+                                    {inStock
+                                      ? "In Stock"
+                                      : "Out of Stock"}
+                                  </span>
+
+                                </div>
+
+                              </article>
+                            );
+                          }
+                        )}
+
+                      </div>
+
+                    </div>
+
+                  )
+                )
+
+              )}
+
+            </div>
+
+          </section>
+
+        )}
+
+        {store && (
+
+          <section className="store-contact-section">
+
+            <div className="customer-container store-contact-grid">
+
+              <div className="store-contact-info">
+
+                <span className="store-contact-overline">
+                  Visit Our Store
+                </span>
+
+                <h2>
+                  {store.storeName ||
+                    "iPhoneFixit"}
+                </h2>
+
+                <p className="store-contact-description">
+                  Need repair help or
+                  looking for an
+                  accessory? Contact
+                  our store directly.
+                </p>
+
+                <div className="store-info-list">
+
+                  {store.address && (
+
+                    <div className="store-info-row">
+
+                      <div className="store-info-icon">
+                        <MapPin
+                          size={18}
+                        />
+                      </div>
+
+                      <div>
+                        <small>
+                          Address
+                        </small>
+
+                        <span>
+                          {
+                            store.address
+                          }
+                        </span>
+                      </div>
+
+                    </div>
+
+                  )}
+
+                  {store.contactNumber && (
+
+                    <div className="store-info-row">
+
+                      <div className="store-info-icon">
+                        <PhoneCall
+                          size={18}
+                        />
+                      </div>
+
+                      <div>
+                        <small>
+                          Contact
+                        </small>
+
+                        <span>
+                          {
+                            store.contactNumber
+                          }
+                        </span>
+                      </div>
+
+                    </div>
+
+                  )}
+
+                  {(store.openingTime ||
+                    store.closingTime) && (
+
+                    <div className="store-info-row">
+
+                      <div className="store-info-icon">
+                        <Clock
+                          size={18}
+                        />
+                      </div>
+
+                      <div>
+                        <small>
+                          Working Hours
+                        </small>
+
+                        <span>
+                          {store.openingTime ||
+                            "--"}
+                          {" - "}
+                          {store.closingTime ||
+                            "--"}
+                        </span>
+                      </div>
 
                     </div>
 
@@ -657,488 +1232,145 @@ function TrackRepair() {
 
                 </div>
 
-                <div className="public-details-grid">
-
-                  <PublicInfo
-                    title="Received"
-                    value={
-                      repair.receivedDate
-                    }
-                  />
-
-                  <PublicInfo
-                    title="Current Status"
-                    value={
-                      repair.status
-                    }
-                  />
-
-                  <PublicInfo
-                    title="Problem"
-                    value={
-                      repair.problem
-                    }
-                  />
-
-                  <PublicInfo
-                    title="Final Cost"
-                    value={
-                      repair.finalRepairCost !=
-                      null
-                        ? `₹${Number(
-                            repair.finalRepairCost
-                          ).toLocaleString(
-                            "en-IN"
-                          )}`
-                        : "Pending"
-                    }
-                  />
-
-                  <PublicInfo
-                    title="Delivered"
-                    value={
-                      repair.deliveryDate ||
-                      "Pending"
-                    }
-                  />
-
-                  <PublicInfo
-                    title="Repair ID"
-                    value={`#${repair.id}`}
-                  />
-
-                </div>
-
               </div>
 
-              <div className="public-repair-footer">
+              <div className="store-contact-actions">
 
                 <span>
-                  Need help?
-                  Contact the shop
-                  with repair ID #
-                  {repair.id}.
+                  Get in touch
                 </span>
 
-                {repair.finalRepairCost !=
-                  null && (
+                <h3>
+                  We're here to help.
+                </h3>
 
-                  <button
-                    type="button"
-                    className="public-download-btn"
-                    onClick={() =>
-                      downloadBill(
-                        repair.id
-                      )
-                    }
+                {store.contactNumber && (
+
+                  <a
+                    className="contact-action contact-call"
+                    href={`tel:${store.contactNumber}`}
                   >
-                    <Download
-                      size={17}
+                    <PhoneCall
+                      size={18}
                     />
 
-                    Download PDF Bill
+                    <div>
+                      <strong>
+                        Call Store
+                      </strong>
+
+                      <small>
+                        Speak with our
+                        repair team
+                      </small>
+                    </div>
 
                     <ArrowRight
-                      size={16}
+                      size={17}
                     />
-                  </button>
+                  </a>
+
+                )}
+
+                {store.whatsappNumber && (
+
+                  <a
+                    className="contact-action contact-whatsapp"
+                    href={`https://wa.me/${getWhatsAppNumber(
+                      store.whatsappNumber
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <MessageCircle
+                      size={18}
+                    />
+
+                    <div>
+                      <strong>
+                        WhatsApp
+                      </strong>
+
+                      <small>
+                        Send us a
+                        message
+                      </small>
+                    </div>
+
+                    <ArrowRight
+                      size={17}
+                    />
+                  </a>
+
+                )}
+
+                {store.googleMapsLink && (
+
+                  <a
+                    className="contact-action contact-map"
+                    href={
+                      store.googleMapsLink
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <ExternalLink
+                      size={18}
+                    />
+
+                    <div>
+                      <strong>
+                        Directions
+                      </strong>
+
+                      <small>
+                        Open in Google
+                        Maps
+                      </small>
+                    </div>
+
+                    <ArrowRight
+                      size={17}
+                    />
+                  </a>
 
                 )}
 
               </div>
 
-            </article>
+            </div>
 
-          )
+          </section>
+
         )}
 
-      </section>
-
-      {/* STORE ITEMS */}
-
-      {items.length > 0 && (
-
-        <section className="customer-container store-public-section">
-
-          <div className="public-section-heading">
-
-            <span>
-              OUR STORE
-            </span>
-
-            <h2>
-              Available in Store
-            </h2>
-
-            <p>
-              Browse accessories
-              and repair products
-              by category.
-            </p>
-
-          </div>
-
-          {/* PRODUCT SEARCH */}
-
-          <div className="public-store-search">
-
-            <Search size={17} />
-
-            <input
-              type="text"
-              value={
-                itemSearch
-              }
-              onChange={(e) =>
-                setItemSearch(
-                  e.target.value
-                )
-              }
-              placeholder="Search products, brands or categories..."
-            />
-
-          </div>
-
-          {/* CATEGORY FILTER */}
-
-          <div className="public-category-filters">
-
-            <button
-              type="button"
-              className={
-                itemCategory ===
-                "ALL"
-                  ? "public-category-btn active"
-                  : "public-category-btn"
-              }
-              onClick={() =>
-                setItemCategory(
-                  "ALL"
-                )
-              }
-            >
-              All
-            </button>
-
-            {storeCategories.map(
-              (category) => (
-
-                <button
-                  type="button"
-                  key={category}
-                  className={
-                    itemCategory ===
-                    category
-                      ? "public-category-btn active"
-                      : "public-category-btn"
-                  }
-                  onClick={() =>
-                    setItemCategory(
-                      category
-                    )
-                  }
-                >
-                  {category}
-                </button>
-
-              )
-            )}
-
-          </div>
-
-          {filteredStoreItems.length ===
-          0 ? (
-
-            <div className="store-no-items">
-
-              <Package
-                size={35}
-              />
-
-              <strong>
-                No products found
-              </strong>
-
-              <span>
-                Try another search
-                or category.
-              </span>
-
-            </div>
-
-          ) : (
-
-            Object.entries(
-              groupedItems
-            ).map(
-              ([
-                category,
-                categoryItems,
-              ]) => (
-
-                <div
-                  className="store-category-group"
-                  key={category}
-                >
-
-                  <div className="store-category-heading">
-
-                    <div>
-
-                      <span>
-                        CATEGORY
-                      </span>
-
-                      <h3>
-                        {category}
-                      </h3>
-
-                    </div>
-
-                    <small>
-                      {
-                        categoryItems.length
-                      }{" "}
-                      item
-                      {categoryItems.length !==
-                      1
-                        ? "s"
-                        : ""}
-                    </small>
-
-                  </div>
-
-                  <div className="store-items-grid">
-
-                    {categoryItems.map(
-                      (item) => (
-
-                        <article
-                          className="store-item-card"
-                          key={
-                            item.id
-                          }
-                        >
-
-                          <div className="store-product-icon">
-
-                            <Package
-                              size={
-                                22
-                              }
-                            />
-
-                          </div>
-
-                          <span className="store-item-category">
-                            {item.category ||
-                              "Other"}
-                          </span>
-
-                          <h3>
-                            {
-                              item.name
-                            }
-                          </h3>
-
-                          {item.brand && (
-
-                            <small>
-                              {
-                                item.brand
-                              }
-                            </small>
-
-                          )}
-
-                          <p>
-                            {item.description ||
-                              "Available at our store."}
-                          </p>
-
-                          <div className="store-item-bottom">
-
-                            <strong>
-                              ₹
-                              {Number(
-                                item.price ||
-                                  0
-                              ).toLocaleString(
-                                "en-IN"
-                              )}
-                            </strong>
-
-                            <span
-                              className={
-                                item.stockQuantity >
-                                0
-                                  ? "customer-stock"
-                                  : "customer-out-stock"
-                              }
-                            >
-                              {item.stockQuantity >
-                              0
-                                ? "Available"
-                                : "Out of Stock"}
-                            </span>
-
-                          </div>
-
-                        </article>
-
-                      )
-                    )}
-
-                  </div>
-
-                </div>
-
-              )
-            )
-
-          )}
-
-        </section>
-
-      )}
-
-      {/* STORE INFO */}
-
-      {store && (
-
-        <section className="store-contact-section">
-
-          <div className="customer-container store-contact-grid">
-
-            <div className="store-contact-info">
-
-              <span className="store-contact-overline">
-                VISIT OUR STORE
-              </span>
-
-              <h2>
-                {store.storeName ||
-                  "iPhoneFixit"}
-              </h2>
-
-              {store.address && (
-
-                <div className="store-info-row">
-
-                  <MapPin
-                    size={17}
-                  />
-
-                  <span>
-                    {
-                      store.address
-                    }
-                  </span>
-
-                </div>
-
-              )}
-
-              {store.contactNumber && (
-
-                <div className="store-info-row">
-
-                  <PhoneCall
-                    size={17}
-                  />
-
-                  <span>
-                    {
-                      store.contactNumber
-                    }
-                  </span>
-
-                </div>
-
-              )}
-
-              {(store.openingTime ||
-                store.closingTime) && (
-
-                <div className="store-info-row">
-
-                  <Clock
-                    size={17}
-                  />
-
-                  <span>
-                    {store.openingTime ||
-                      "--"}
-                    {" - "}
-                    {store.closingTime ||
-                      "--"}
-                  </span>
-
-                </div>
-
-              )}
-
-            </div>
-
-            <div className="store-contact-actions">
-
-              {store.contactNumber && (
-
-                <a
-                  href={`tel:${store.contactNumber}`}
-                >
-                  <PhoneCall
-                    size={16}
-                  />
-                  Call Store
-                </a>
-
-              )}
-
-              {store.whatsappNumber && (
-
-                <a
-                  href={`https://wa.me/${getWhatsAppNumber(
-                    store.whatsappNumber
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <MessageCircle
-                    size={16}
-                  />
-                  WhatsApp
-                </a>
-
-              )}
-
-              {store.googleMapsLink && (
-
-                <a
-                  href={
-                    store.googleMapsLink
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <ExternalLink
-                    size={16}
-                  />
-                  Directions
-                </a>
-
-              )}
-
-            </div>
-
-          </div>
-
-        </section>
-
-      )}
+      </main>
 
       <footer className="customer-footer">
-        © 2026 iPhoneFixit · Professional Device Repair
+
+        <div className="customer-container customer-footer-inner">
+
+          <div className="customer-footer-brand">
+            <Smartphone
+              size={17}
+            />
+
+            <strong>
+              iPhone
+              <span>
+                Fixit
+              </span>
+            </strong>
+          </div>
+
+          <p>
+            © 2026 iPhoneFixit.
+            Professional Device
+            Repair.
+          </p>
+
+        </div>
+
       </footer>
 
     </div>
@@ -1153,9 +1385,13 @@ function MiniStep({
   return (
     <div
       className={`mini-step ${
-        done ? "done" : ""
+        done
+          ? "done"
+          : ""
       } ${
-        active ? "active" : ""
+        active
+          ? "active"
+          : ""
       }`}
     >
       <span />
@@ -1170,13 +1406,112 @@ function MiniStep({
 function PublicInfo({
   title,
   value,
+  highlight = false,
 }) {
   return (
-    <div className="public-info">
-      <span>{title}</span>
+    <div
+      className={`public-info ${
+        highlight
+          ? "public-info-highlight"
+          : ""
+      }`}
+    >
+      <span>
+        {title}
+      </span>
+
       <strong>
         {value ?? "-"}
       </strong>
+    </div>
+  );
+}
+
+function RepairProgress({
+  status,
+}) {
+  const statuses = [
+    "RECEIVED",
+    "CHECKING",
+    "REPAIRING",
+    "READY",
+    "DELIVERED",
+  ];
+
+  const currentIndex =
+    Math.max(
+      statuses.indexOf(
+        status
+      ),
+      0
+    );
+
+  return (
+    <div className="public-progress">
+
+      <div className="public-progress-heading">
+        <span>
+          Repair Progress
+        </span>
+
+        <strong>
+          {formatStatus(
+            status
+          )}
+        </strong>
+      </div>
+
+      <div className="public-progress-track">
+
+        {statuses.map(
+          (
+            step,
+            index
+          ) => {
+
+            const completed =
+              index <
+              currentIndex;
+
+            const active =
+              index ===
+              currentIndex;
+
+            return (
+              <div
+                className={`public-progress-step ${
+                  completed
+                    ? "completed"
+                    : ""
+                } ${
+                  active
+                    ? "active"
+                    : ""
+                }`}
+                key={step}
+              >
+                <div className="progress-step-marker">
+                  {completed ? (
+                    <CheckCircle2
+                      size={14}
+                    />
+                  ) : (
+                    <span />
+                  )}
+                </div>
+
+                <small>
+                  {formatStatus(
+                    step
+                  )}
+                </small>
+              </div>
+            );
+          }
+        )}
+
+      </div>
+
     </div>
   );
 }
@@ -1185,15 +1520,38 @@ function Status({
   status,
 }) {
   const safeStatus =
-    status || "RECEIVED";
+    status ||
+    "RECEIVED";
 
   return (
     <span
       className={`status large-status ${safeStatus.toLowerCase()}`}
     >
-      {safeStatus}
+      {formatStatus(
+        safeStatus
+      )}
     </span>
   );
+}
+
+function formatStatus(
+  status
+) {
+  if (!status) {
+    return "Received";
+  }
+
+  return status
+    .toLowerCase()
+    .replace(
+      /_/g,
+      " "
+    )
+    .replace(
+      /\b\w/g,
+      (letter) =>
+        letter.toUpperCase()
+    );
 }
 
 export default TrackRepair;

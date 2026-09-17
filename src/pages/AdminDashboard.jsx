@@ -90,6 +90,14 @@ function AdminDashboard() {
         <DashboardCard icon={<CheckCircle2 />} title="Delivered" value={data.deliveredRepairs || 0} text="Completed jobs" />
         <DashboardCard icon={<Users />} title="Customers" value={data.totalCustomers || 0} text="Customer records" />
         <DashboardCard icon={<Smartphone />} title="Total Repairs" value={data.totalRepairs || 0} text="All repair jobs" />
+        <DashboardCard
+  icon={<IndianRupee />}
+  title="Inventory Revenue"
+  value={`₹${Number(
+    data.inventoryRevenue || 0
+  ).toLocaleString("en-IN")}`}
+  text="Product sales"
+/>
       </div>
 
       <div className="dashboard-main-grid">
