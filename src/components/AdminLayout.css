@@ -1,0 +1,1013 @@
+/* Admin layout only. Page and form styles remain in index.css. */
+
+
+
+.admin-app {
+  min-height: 100vh;
+}
+
+.admin-app .admin-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 250px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+  color: #fff;
+  background: linear-gradient(180deg, #151724 0%, #0f1119 100%);
+  z-index: 1000;
+}
+
+.admin-app .sidebar-header, .admin-app .brand-wrap, .admin-app .sidebar-menu a, .admin-app .mobile-topbar{
+  display: flex;
+  align-items: center;
+}
+
+.admin-app .sidebar-header{
+  justify-content: space-between;
+}
+
+.admin-app .brand-wrap {
+  gap: 10px;
+}
+
+.admin-app .brand-logo{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-app .brand-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  color: white;
+  background: linear-gradient(135deg, #7c6cff, #5367ff);
+}
+
+.admin-app .brand-name {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.7px;
+}
+
+.admin-app .brand-name span{
+  color: #7668f6;
+}
+
+.admin-app .menu-label {
+  margin: 38px 12px 13px;
+  color: #696a78;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.admin-app .sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-app .sidebar-menu a {
+  gap: 12px;
+  padding: 12px 13px;
+  border-radius: 11px;
+  text-decoration: none;
+  color: #9ca0b1;
+  font-size: 13px;
+  transition: 0.2s ease;
+}
+
+.admin-app .sidebar-menu a:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.admin-app .sidebar-menu a.active {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(124, 108, 255, 0.22), rgba(83, 103, 255, 0.12));
+  border: 1px solid rgba(124, 108, 255, 0.14);
+}
+
+.admin-app .sidebar-footer {
+  margin-top: auto;
+}
+
+.admin-app .sidebar-add-btn,
+.admin-app .logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 11px;
+}
+
+.admin-app .sidebar-add-btn {
+  padding: 13px;
+  border: 0;
+  color: #171827;
+  background: #fff;
+  font-weight: 750;
+}
+
+.admin-app .logged-user {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 18px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.admin-app .logged-user strong {
+  color: #fff;
+  font-size: 12px;
+}
+
+.admin-app .logged-user span {
+  color: #8d91a0;
+  font-size: 10px;
+}
+
+.admin-app .logged-user small {
+  color: #646875;
+  font-size: 9px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-app .logout-btn {
+  margin-top: 8px;
+  padding: 11px;
+  border: 1px solid #2d2f3b;
+  color: #b6b8c4;
+  background: transparent;
+  font-weight: 600;
+}
+
+.admin-app .logout-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.admin-app .sidebar-close-btn,
+.admin-app .mobile-menu-btn {
+  border: 0;
+  background: transparent;
+  color: #fff;
+}
+
+.admin-app .sidebar-close-btn {
+  display: none;
+}
+
+.admin-app .admin-page {
+  margin-left: 250px;
+  min-height: 100vh;
+  padding: 38px clamp(20px, 4vw, 55px);
+}
+
+.admin-app .mobile-topbar {
+  display: none;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@media (max-width: 900px) {
+  .admin-app .mobile-topbar {
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 64px;
+    z-index: 900;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 15px;
+    background: #151622;
+    color: #fff;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@media (max-width: 900px) {
+
+  .admin-app .admin-sidebar {
+    left: -280px;
+    width: 265px;
+    transition: left 0.25s ease;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@media (max-width: 900px) {
+
+  .admin-app .show-sidebar { left: 0; }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@media (max-width: 900px) {
+  .admin-app .sidebar-close-btn { display: block; }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@media (max-width: 900px) {
+
+  .admin-app .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 950;
+    background: rgba(0, 0, 0, 0.45);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@media (max-width: 900px) {
+
+  .admin-app .admin-page {
+    margin-left: 0;
+    padding: 86px 16px 30px;
+  }
+}
+
+.admin-app .sidebar-section-label {
+  margin-top: 22px;
+  margin-bottom: 8px;
+}
+
+/* Keep every navigation link and the footer reachable on short screens. */
+.admin-app .admin-sidebar {
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #45485e transparent;
+}
+
+.admin-app .sidebar-header,
+.admin-app .sidebar-footer {
+  flex-shrink: 0;
+}
+
+.admin-app .sidebar-footer {
+  padding-top: 24px;
+}
+
+.admin-app .sidebar-menu a {
+  min-height: 44px;
+  border: 1px solid transparent;
+}
+
+.admin-app .sidebar-menu a svg,
+.admin-app .brand-logo {
+  flex-shrink: 0;
+}
+
+.admin-app .sidebar-menu a:focus-visible,
+.admin-app .admin-sidebar button:focus-visible,
+.admin-app .mobile-menu-btn:focus-visible {
+  outline: 2px solid #a99fff;
+  outline-offset: 3px;
+}
+
+.admin-app .mobile-menu-btn,
+.admin-app .sidebar-close-btn {
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.admin-app .admin-page {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .admin-app .admin-sidebar {
+    max-width: calc(100vw - 32px);
+    visibility: hidden;
+    transition: left 0.25s ease, visibility 0.25s;
+  }
+
+  .admin-app .admin-sidebar.show-sidebar {
+    left: 0;
+    visibility: visible;
+  }
+}
+
+@media (min-width: 901px) {
+  .admin-app .sidebar-backdrop {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-app .admin-sidebar,
+  .admin-app .sidebar-menu a {
+    transition: none;
+  }
+}

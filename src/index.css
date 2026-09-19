@@ -36,179 +36,23 @@ button:disabled {
   cursor: not-allowed;
 }
 
-
-.admin-app {
-  min-height: 100vh;
-}
-
-.admin-sidebar {
-  position: fixed;
-  inset: 0 auto 0 0;
-  width: 250px;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  padding: 24px 16px;
-  color: #fff;
-  background: linear-gradient(180deg, #151724 0%, #0f1119 100%);
-  z-index: 1000;
-}
-
-.sidebar-header, .brand-wrap, .sidebar-menu a, .mobile-topbar, .page-heading, .card-heading, .person-cell, .staff-actions, .page-heading-actions{
+.page-heading, .card-heading, .person-cell, .staff-actions, .page-heading-actions{
   display: flex;
   align-items: center;
 }
 
-.sidebar-header, .page-heading, .card-heading{
+.page-heading, .card-heading{
   justify-content: space-between;
 }
 
-.brand-wrap {
-  gap: 10px;
-}
-
-.brand-logo, .login-logo, .form-section-icon, .dashboard-card-icon, .pipeline-icon, .person-avatar{
+.login-logo, .form-section-icon, .dashboard-card-icon, .pipeline-icon, .person-avatar{
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.brand-logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 11px;
-  color: white;
-  background: linear-gradient(135deg, #7c6cff, #5367ff);
-}
-
-.brand-name {
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.7px;
-}
-
-.brand-name span, .login-brand span{
+.login-brand span{
   color: #7668f6;
-}
-
-.menu-label {
-  margin: 38px 12px 13px;
-  color: #696a78;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 2px;
-}
-
-.sidebar-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.sidebar-menu a {
-  gap: 12px;
-  padding: 12px 13px;
-  border-radius: 11px;
-  text-decoration: none;
-  color: #9ca0b1;
-  font-size: 13px;
-  transition: 0.2s ease;
-}
-
-.sidebar-menu a:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.sidebar-menu a.active {
-  color: #fff;
-  background: linear-gradient(135deg, rgba(124, 108, 255, 0.22), rgba(83, 103, 255, 0.12));
-  border: 1px solid rgba(124, 108, 255, 0.14);
-}
-
-.sidebar-footer {
-  margin-top: auto;
-}
-
-.sidebar-add-btn,
-.logout-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border-radius: 11px;
-}
-
-.sidebar-add-btn {
-  padding: 13px;
-  border: 0;
-  color: #171827;
-  background: #fff;
-  font-weight: 750;
-}
-
-.logged-user {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  margin-top: 18px;
-  padding: 12px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.logged-user strong {
-  color: #fff;
-  font-size: 12px;
-}
-
-.logged-user span {
-  color: #8d91a0;
-  font-size: 10px;
-}
-
-.logged-user small {
-  color: #646875;
-  font-size: 9px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.logout-btn {
-  margin-top: 8px;
-  padding: 11px;
-  border: 1px solid #2d2f3b;
-  color: #b6b8c4;
-  background: transparent;
-  font-weight: 600;
-}
-
-.logout-btn:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.sidebar-close-btn,
-.mobile-menu-btn {
-  border: 0;
-  background: transparent;
-  color: #fff;
-}
-
-.sidebar-close-btn {
-  display: none;
-}
-
-.admin-page {
-  margin-left: 250px;
-  min-height: 100vh;
-  padding: 38px clamp(20px, 4vw, 55px);
-}
-
-.mobile-topbar {
-  display: none;
 }
 
 
@@ -1101,38 +945,6 @@ button:disabled {
 
 
 @media (max-width: 900px) {
-  .mobile-topbar {
-    position: fixed;
-    inset: 0 0 auto 0;
-    height: 64px;
-    z-index: 900;
-    display: flex;
-    justify-content: space-between;
-    padding: 0 15px;
-    background: #151622;
-    color: #fff;
-  }
-
-  .admin-sidebar {
-    left: -280px;
-    width: 265px;
-    transition: left 0.25s ease;
-  }
-
-  .show-sidebar { left: 0; }
-  .sidebar-close-btn { display: block; }
-
-  .sidebar-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 950;
-    background: rgba(0, 0, 0, 0.45);
-  }
-
-  .admin-page {
-    margin-left: 0;
-    padding: 86px 16px 30px;
-  }
 
   .dashboard-main-grid,
   .new-repair-layout,
@@ -1652,11 +1464,6 @@ button:disabled {
   .inventory-item-info p {
     max-width: 100%;
   }
-}
-
-.sidebar-section-label {
-  margin-top: 22px;
-  margin-bottom: 8px;
 }
 
 .inventory-form,

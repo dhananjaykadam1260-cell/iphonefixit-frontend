@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Download, MessageCircle, Save, Smartphone, User } from "lucide-react";
 
@@ -7,63 +7,113 @@ import AdminLayout from "../components/AdminLayout";
 
 function RepairDetails() {
   const { id } = useParams();
+  // A different route starts a fresh form without carrying over old drafts.
+  return <RepairDetailsForm key={id} id={id} />;
+}
+
+function RepairDetailsForm({ id }) {
   const [repair, setRepair] = useState(null);
   const [status, setStatus] = useState("");
   const [cost, setCost] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState("");
+  const [sharing, setSharing] = useState(false);
+  const [whatsappUrl, setWhatsappUrl] = useState("");
+  const saveLock = useRef(false);
+  const shareLock = useRef(false);
+  const mounted = useRef(false);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
-  const loadRepair = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const response = await api.get(`/repairs/${id}`);
-      setRepair(response.data);
-      setStatus(response.data.status || "RECEIVED");
-      setCost(response.data.finalRepairCost ?? "");
-    } catch (err) {
-      console.error("Load repair error:", err);
-      setError(err.response?.data?.error || "Unable to load repair details.");
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    mounted.current = true;
+    let cancelled = false;
+    const controller = new AbortController();
+
+    const load = async () => {
+      try {
+        const response = await api.get(`/repairs/${id}`, { signal: controller.signal });
+        if (cancelled) return;
+        setRepair(response.data);
+        setStatus(response.data?.status || "RECEIVED");
+        setCost(response.data?.finalRepairCost ?? "");
+      } catch (err) {
+        if (!cancelled) setError(errorText(err, "Unable to load repair details."));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+      mounted.current = false;
+      controller.abort();
+    };
   }, [id]);
 
-  useEffect(() => {
-    loadRepair();
-  }, [loadRepair]);
+  const saveField = async (field, value) => {
+    if (saveLock.current) return;
+    saveLock.current = true;
+    setSaving(field);
+    setMessage("");
+    setError("");
+    setWhatsappUrl("");
 
-  const saveStatus = async () => {
     try {
-      setMessage("");
-      setError("");
-      await api.put(`/repairs/${id}/status`, null, { params: { status } });
-      setMessage("Repair status updated successfully.");
-      await loadRepair();
+      await api.put(`/repairs/${id}/${field}`, null, { params: { [field]: value } });
+      if (!mounted.current) return;
+
+      // Reflect the confirmed write even if the subsequent refresh fails.
+      setRepair((current) => ({
+        ...current,
+        [field === "status" ? "status" : "finalRepairCost"]: value,
+      }));
+      setMessage(field === "status"
+        ? "Repair status updated successfully."
+        : "Final repair cost saved successfully.");
+
+      try {
+        const response = await api.get(`/repairs/${id}`);
+        if (mounted.current) {
+          // Refresh server details, including delivery date, without resetting drafts.
+          setRepair(response.data);
+        }
+      } catch {
+        if (mounted.current) {
+          setError("Your change was saved, but the latest details could not be refreshed. Reload to verify them.");
+        }
+      }
     } catch (err) {
-      setError(err.response?.data?.error || "Unable to update status.");
+      if (mounted.current) {
+        setError(errorText(err, field === "status" ? "Unable to update status." : "Unable to save repair cost."));
+      }
+    } finally {
+      saveLock.current = false;
+      if (mounted.current) setSaving("");
     }
   };
 
+  const saveStatus = async () => {
+    if (!["RECEIVED", "CHECKING", "REPAIRING", "READY", "DELIVERED"].includes(status)) {
+      setError("Please select a valid repair status.");
+      return;
+    }
+    await saveField("status", status);
+  };
+
   const saveCost = async () => {
-    if (cost === "" || Number(cost) < 0) {
+    const numericCost = Number(cost);
+    if (String(cost).trim() === "" || !Number.isFinite(numericCost) || numericCost < 0) {
+      setMessage("");
       setError("Please enter a valid repair cost.");
       return;
     }
 
-    try {
-      setMessage("");
-      setError("");
-      await api.put(`/repairs/${id}/cost`, null, { params: { cost: Number(cost) } });
-      setMessage("Final repair cost saved successfully.");
-      await loadRepair();
-    } catch (err) {
-      setError(err.response?.data?.error || "Unable to save repair cost.");
-    }
+    await saveField("cost", numericCost);
   };
 
   const downloadBill = () => {
@@ -75,17 +125,44 @@ function RepairDetails() {
   };
 
   const shareWhatsApp = async () => {
+    if (shareLock.current || saveLock.current) return;
+    shareLock.current = true;
+    setSharing(true);
+    setMessage("");
+    setError("");
+    setWhatsappUrl("");
+
+    // Open synchronously during the click, before awaiting the API.
+    // Detach opener manually so the handle remains available for navigation.
+    let popup = null;
     try {
-      setMessage("");
-      setError("");
+      popup = window.open("about:blank", "_blank");
+      if (popup) {
+        popup.opener = null;
+        popup.document.title = "Preparing WhatsApp sharing";
+        popup.document.body.textContent = "Preparing your repair details…";
+      }
       const response = await api.get(`/whatsapp/share/${id}`);
-      if (!response.data?.whatsappUrl) {
-        setError("WhatsApp link was not generated.");
+      if (!mounted.current) {
+        if (popup && !popup.closed) popup.close();
         return;
       }
-      window.open(response.data.whatsappUrl, "_blank", "noopener,noreferrer");
+      const url = new URL(response.data?.whatsappUrl);
+      if (url.protocol !== "https:" || !["wa.me", "api.whatsapp.com", "web.whatsapp.com", "www.whatsapp.com"].includes(url.hostname)) {
+        throw new Error("Invalid WhatsApp URL");
+      }
+      setWhatsappUrl(url.href);
+      if (popup && !popup.closed) {
+        popup.location.replace(url.href);
+      } else {
+        setMessage("Use the Open WhatsApp link below to continue sharing.");
+      }
     } catch (err) {
-      setError(err.response?.data?.error || "Unable to open WhatsApp sharing.");
+      if (popup && !popup.closed) popup.close();
+      if (mounted.current) setError(errorText(err, "Unable to open WhatsApp sharing."));
+    } finally {
+      shareLock.current = false;
+      if (mounted.current) setSharing(false);
     }
   };
 
@@ -108,8 +185,8 @@ function RepairDetails() {
         <Status status={repair.status || "RECEIVED"} />
       </div>
 
-      {message && <div className="success-message">{message}</div>}
-      {error && <div className="error-message">{error}</div>}
+      {message && <div className="success-message" role="status">{message}</div>}
+      {error && <div className="error-message" role="alert">{error}</div>}
 
       <div className="repair-details-layout">
         <section className="ui-card">
@@ -148,31 +225,37 @@ function RepairDetails() {
 
           <section className="ui-card control-box">
             <h2>Repair Status</h2>
-            <select className="app-select" value={status} onChange={(e) => setStatus(e.target.value)}>
+            <select aria-label="Repair status" className="app-select" value={status} disabled={Boolean(saving) || sharing} onChange={(e) => setStatus(e.target.value)}>
               <option value="RECEIVED">Received</option>
               <option value="CHECKING">Checking</option>
               <option value="REPAIRING">Repairing</option>
               <option value="READY">Ready</option>
               <option value="DELIVERED">Delivered</option>
             </select>
-            <button type="button" className="btn btn-primary full-button" onClick={saveStatus}><Save size={16} />Update Status</button>
+            <button type="button" className="btn btn-primary full-button" disabled={Boolean(saving) || sharing} onClick={saveStatus}><Save size={16} />{saving === "status" ? "Updating..." : "Update Status"}</button>
           </section>
 
           <section className="ui-card control-box">
             <h2>Final Repair Cost</h2>
-            <div className="money-field"><span>₹</span><input type="number" min="0" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="0" /></div>
-            <button type="button" className="btn btn-secondary full-button" onClick={saveCost}><Save size={16} />Save Cost</button>
+            <div className="money-field"><span>₹</span><input aria-label="Final repair cost" type="number" min="0" step="0.01" value={cost} disabled={Boolean(saving) || sharing} onChange={(e) => setCost(e.target.value)} placeholder="0" /></div>
+            <button type="button" className="btn btn-secondary full-button" disabled={Boolean(saving) || sharing} onClick={saveCost}><Save size={16} />{saving === "cost" ? "Saving..." : "Save Cost"}</button>
           </section>
 
           <section className="ui-card control-box">
             <h2>Bill & Sharing</h2>
-            <button type="button" className="btn btn-primary full-button" disabled={repair.finalRepairCost == null} onClick={downloadBill}><Download size={17} />Download PDF</button>
-            <button type="button" className="btn whatsapp-button full-button" onClick={shareWhatsApp}><MessageCircle size={17} />Share on WhatsApp</button>
+            <button type="button" className="btn btn-primary full-button" disabled={repair.finalRepairCost == null || Boolean(saving)} onClick={downloadBill}><Download size={17} />Download PDF</button>
+            <button type="button" className="btn whatsapp-button full-button" disabled={Boolean(saving) || sharing} onClick={shareWhatsApp}><MessageCircle size={17} />{sharing ? "Preparing..." : "Share on WhatsApp"}</button>
+            {whatsappUrl && <a className="btn btn-secondary full-button" href={whatsappUrl} target="_blank" rel="noopener noreferrer">Open WhatsApp</a>}
           </section>
         </div>
       </div>
     </AdminLayout>
   );
+}
+
+function errorText(err, fallback) {
+  const text = err.response?.data?.error || err.response?.data?.message;
+  return typeof text === "string" ? text : fallback;
 }
 
 function Info({ title, value }) {

@@ -18,6 +18,8 @@ import {
   X,
 } from "lucide-react";
 
+import "./AdminLayout.css";
+
 function AdminLayout({ children }) {
   const [open, setOpen] = useState(false);
 
